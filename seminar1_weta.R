@@ -1,11 +1,12 @@
 # R intro: basic data import and paired ttest ####
 
 #install package (this one is necessary for getting data off github directly)
-install.packages("RCurl")
+
+#install.packages("RCurl") #uncomment this is you don't have it
 library(RCurl)
 
 # get data
-url <- getURL("https://raw.githubusercontent.com/orb16/seminaRs/master/weta.ttest2.csv", ssl.verifypeer = FALSE)
+url <- getURL("https://raw.githubusercontent.com/orb16/general_R/master/weta.ttest2.csv", ssl.verifypeer = FALSE)
 weta.edge <- read.csv(text= url, header = TRUE) #slightly different way of reading a csv, necessary for web data.  
 
 #if this doesn't work, use this:
@@ -23,7 +24,7 @@ interior<-c(0,3,1,5,2,2)
 t.test(edge,interior, paired = TRUE)
 
 # plot data
-install.packages("ggplot2")
+#install.packages("ggplot2") ") #uncomment this if you don't have it already
 library(ggplot2)
 
 ggplot(data = weta.edge, aes(x = distance, y = weta))+ 
