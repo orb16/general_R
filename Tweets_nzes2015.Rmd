@@ -130,7 +130,7 @@ print.xtable(xtable(most_liked_tweets, digits = 0), type = "html", include.rowna
 ## And, a final word cloud
 .. not shown, you'll have to use the code to knit your own! (it's a bit big)
 
-```{r, echo = FALSE, eval = FALSE}
+```{r, echo = FALSE, message=FALSE, warning = FALSE}
 mytweets2 <- dt_tweets %>%
   select(text) %>%
   gsub("â", "", .) %>%
