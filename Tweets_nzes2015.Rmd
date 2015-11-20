@@ -1,0 +1,152 @@
+---
+title: "Tweets from nzes2015"
+author: "Olivia Burge"
+date: "20 November 2015"
+output: html_document
+---
+
+## Summary of NZES 2015 tweets
+Tweets collected at 6 pm, Friday 20 November 2015 from Cass Field Station writer's retreat. I've saved the tweets as a dataframe, you would need to set up a twitter account and scrape twitter to redo the analysis from scratch yourself.
+
+```{r, echo = FALSE, message=FALSE, warning=FALSE}
+require(wesanderson)
+require(wordcloud)
+require(ggplot2)
+require(dplyr) ## you'll need to install this if you don't have it already
+#tweets_df <- read.csv("nzes2015tweets.csv")
+load("raw_tweets.Rdata")
+```
+
+There were `r nrow(dt_tweets)` tweets and retweets at NZES2015, and `r nrow(dt_tweets %>% filter(isRetweet == FALSE))` unique tweets. `r length(unique(dt_tweets$screenName))` different users tweeted using the NZES2015 hashtag. 
+
+## Tweeting times
+
+```{r, echo = FALSE}
+
+ggplot(dt_tweets, aes(x = created)) + 
+  scale_x_datetime() +
+  geom_histogram(binwidth = 1600) + 
+  theme_bw()  +
+  labs(x = "Date", y = "Tweets", title = "#NZES2015 tweets")
+
+```
+
+
+## Most prolific tweeters
+I've excluded retweeting for this, and only included those who tweeted more than five times with the hashtag
+
+```{r, echo = FALSE}
+dt_tweets_users <- dt_tweets %>%
+  filter(isRetweet == "FALSE") %>%
+  group_by(screenName) %>%
+  summarise(ntweets = n()) %>%
+  arrange(desc(ntweets)) %>%
+  filter(ntweets > 5)
+dt_tweets_users
+
+ggplot(dt_tweets_users, aes(x = ntweets, 
+                            y = reorder(screenName, ntweets))) +
+  geom_point() +
+  scale_x_log10()+
+  labs(y = "Screen name", x = "Tweet count")+
+  theme_bw()
+```
+
+
+## Most activity-provoking tweeters
+
+I've plotted this by the average number of retweets and favourites a user got. The number of tweets they wrote using the hashtag is included in blue/green at the right of the graph.
+
+### Retweeted users 
+
+```{r, echo = FALSE}
+tweeters <- dt_tweets %>%
+  filter(isRetweet == "FALSE") %>%
+  group_by(screenName) %>%
+  summarise(mean_retweets = mean(retweetCount),
+            se_retweets = sd(retweetCount)/sqrt(length(retweetCount)),
+            mean_favourites = mean(favoriteCount),
+             se_favourites = sd(favoriteCount)/sqrt(length(favoriteCount)),
+            total_tweets = n()) %>%
+  filter(total_tweets > 5) 
+
+tweeters2 <- tweeters %>%
+  arrange(desc(mean_retweets)) %>% 
+  select(screenName, mean_retweets, se_retweets, total_tweets) %>%
+  slice(1:5)
+
+ggplot(tweeters2, aes(x = reorder(screenName, mean_retweets), y = mean_retweets)) +
+    geom_errorbar(aes(ymin = mean_retweets - se_retweets,
+                    ymax = mean_retweets + se_retweets),
+                width = 0.2, colour = "grey") +
+  geom_point(size = 3) +
+  coord_flip() +
+  theme_bw() +
+  geom_text(aes(x = screenName, y = 6, label = total_tweets),
+            colour = "darkblue", size = 5) +
+  labs(y = "Retweets (mean \U00b1 SE)", x = "Twitter handle") +
+  ggtitle("Most retweeted users")
+
+````
+
+### Most favourited users
+
+```{r, echo = FALSE}
+tweeters3 <- tweeters %>%
+  arrange(desc(mean_favourites)) %>% 
+  select(screenName, mean_favourites, se_favourites, total_tweets) %>%
+  slice(1:5)
+
+ggplot(tweeters3, aes(x = reorder(screenName, mean_favourites), y = mean_favourites)) +
+    geom_errorbar(aes(ymin = mean_favourites - se_favourites,
+                    ymax = mean_favourites + se_favourites),
+                width = 0.2, colour = "grey") +
+  geom_point(size = 3) +
+  coord_flip() +
+  theme_bw() +
+  geom_text(aes(x = screenName, y = 8.5, label = total_tweets),
+            colour = "forestgreen", size = 5) +
+  labs(y = "Favourites (mean \U00b1 SE)", x = "Twitter handle")+
+  ggtitle("Most favourited users")
+```
+
+## Most talked about tweets
+I've ranked these on how much they were retweeted, but display the 'favorite' count too.
+
+```{r, echo = FALSE}
+most_liked_tweets <- dt_tweets %>% 
+  filter(isRetweet == "FALSE" & retweetCount > 0) %>%
+  arrange(desc(retweetCount)) %>%
+  slice(1:3) %>%
+  select(screenName,  retweetCount, favoriteCount, text)
+```
+
+```{r, results = "asis", message = FALSE, echo = FALSE}
+require(xtable)
+print.xtable(xtable(most_liked_tweets, digits = 0), type = "html", include.rownames = FALSE)
+```
+
+
+## And, a final word cloud
+
+```{r, echo = FALSE}
+mytweets2 <- dt_tweets %>%
+  select(text) %>%
+  gsub("â", "", .) %>%
+  gsub("(@|\\#)\\w+", "", .) %>%  ## remove mentions/hashtags
+  gsub("https?\\:\\/\\/\\w+\\.\\w+(\\/\\w+)*", "", .) %>% ## remove urls
+  gsub("https\\:\\/\\/\\w+\\.\\w+(\\/\\w+)*", "", .) %>% ## remove urls
+  gsub("\\bthe\\b", "", .) %>% ## remove the
+  gsub("amp", "", .) %>%  ## remove &
+  gsub("https:â\u0080", "", .) %>%
+  gsub("Hmm, â\u0080¦", "", .) %>%
+  gsub("\\bspp\\b", "species", .) %>% ## replace spp by species
+  # filter(!isRetweet) %>%
+  paste(collapse = "") %>%
+  iconv(., from = "latin1", to = "UTF-8", sub = "")
+
+pal <- wes_palette("Royal2", 9, type = "continuous") #
+
+wordcloud(words = mytweets2, max.words = 100, colors = pal, random.order = FALSE, scale = c(3, .5))
+
+````
