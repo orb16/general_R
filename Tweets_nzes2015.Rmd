@@ -75,7 +75,7 @@ tweeters2 <- tweeters %>%
   select(screenName, mean_retweets, se_retweets, total_tweets) %>%
   slice(1:5)
 
-ggplot(tweeters2, aes(x = reorder(screenName, mean_retweets), y = mean_retweets)) +
+most_retweeted <- ggplot(tweeters2, aes(x = reorder(screenName, mean_retweets), y = mean_retweets)) +
     geom_errorbar(aes(ymin = mean_retweets - se_retweets,
                     ymax = mean_retweets + se_retweets),
                 width = 0.2, colour = "grey") +
@@ -86,6 +86,9 @@ ggplot(tweeters2, aes(x = reorder(screenName, mean_retweets), y = mean_retweets)
             colour = "darkblue", size = 5) +
   labs(y = "Retweets (mean \U00b1 SE)", x = "Twitter handle") +
   ggtitle("Most retweeted users")
+most_retweeted
+
+grobs <- grid.arrange(most_retweeted, most_favourited)
 
 ````
 
@@ -97,7 +100,7 @@ tweeters3 <- tweeters %>%
   select(screenName, mean_favourites, se_favourites, total_tweets) %>%
   slice(1:5)
 
-ggplot(tweeters3, aes(x = reorder(screenName, mean_favourites), y = mean_favourites)) +
+most_favourited <- ggplot(tweeters3, aes(x = reorder(screenName, mean_favourites), y = mean_favourites)) +
     geom_errorbar(aes(ymin = mean_favourites - se_favourites,
                     ymax = mean_favourites + se_favourites),
                 width = 0.2, colour = "grey") +
@@ -108,6 +111,7 @@ ggplot(tweeters3, aes(x = reorder(screenName, mean_favourites), y = mean_favouri
             colour = "forestgreen", size = 5) +
   labs(y = "Favourites (mean \U00b1 SE)", x = "Twitter handle")+
   ggtitle("Most favourited users")
+most_favourited
 ```
 
 ## Most talked about tweets
