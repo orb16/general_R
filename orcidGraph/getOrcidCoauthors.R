@@ -2,6 +2,7 @@ library(rorcid)
 library(igraph)
 library(visNetwork)
 require(tidyverse)
+# https://github.com/agbarnett/work-pals/blob/master/network.R
 # functiosn from
 #https://downwithtime.wordpress.com/2015/02/12/building-your-network-using-orcid-and-ropensci/
 get_doi <- function(x){
