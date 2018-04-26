@@ -1,6 +1,7 @@
 library(rorcid)
 library(igraph)
 library(visNetwork)
+require(tidyverse)
 # functiosn from
 #https://downwithtime.wordpress.com/2015/02/12/building-your-network-using-orcid-and-ropensci/
 get_doi <- function(x){
@@ -64,7 +65,58 @@ ids <- identifiers(myWorks)
 
 firstID <- orcid_doi(ids[1])
 
-sapply(ids, function(x){
+tmp <- sapply(ids, simplify = FALSE, function(x){
   itemRecord <- orcid_doi(x)
-  allAuthors <- itemRecord[[1]]$`orcid-identifier.uri`
+  allAuthors <- itemRecord[[1]]$`orcid-identifier.path`
+  thisAuthor <- "0000-0001-7719-6695"
+  
+  otherAuthor <- allAuthors[!grepl(thisAuthor, fixed = TRUE, allAuthors)]
+  if(length(otherAuthor) > 0){
+    ret <- data.frame(otherAuthor, manuscript = x)
+  }else{
+    ret <- data.frame(otherAuthor = "noCoAuthors", manuscript = x)
+  }
+
+  return(ret)
+  
+})
+
+
+# get list of second order relationships
+
+secondOrder <- lapply(tmp, function(x){
+  
+  NumCoAuthors <- length(x$otherAuthor)
+  coAuthors <- x$otherAuthor
+  
+  for(i in seq_along(coAuthors)){
+    thisCoAuthor <- as.character(coAuthors[i])
+    coAuthWorks <- works(thisCoAuthor)
+    coAuthWorksIDs <- identifiers(coAuthWorks)
+    
+    coAuthorsCOAUTHORS <- sapply(coAuthWorksIDs, simplify = FALSE, function(x){
+      itemRecord <- orcid_doi(x)
+      allAuthors <- itemRecord[[1]]$`orcid-identifier.path`
+      thisAuthor <- "0000-0001-7719-6695"
+      
+      otherAuthor <- allAuthors[!grepl(thisAuthor, fixed = TRUE, allAuthors)]
+      if(length(otherAuthor) > 0){
+        ret <- data.frame(otherAuthor, manuscript = x)
+      }else{
+        ret <- data.frame(otherAuthor = "noCoAuthors", manuscript = x)
+      }
+      
+      return(ret)
+      
+    })
+    
+    coAuthorsCOAUTHORSdf <- bind_rows(coAuthorsCOAUTHORS)
+    coAuthorsCOAUTHORSdf$from <- thisCoAuthor
+    names(coAuthorsCOAUTHORSdf)[grepl("otherAuthor", names(coAuthorsCOAUTHORSdf))] <- "to"
+    thePeople <- data.frame(allAuthors = as.character(unique(c(coAuthorsCOAUTHORSdf$to, thisCoAuthor))))
+    tmpGraph <- graph_from_data_frame(coAuthorsCOAUTHORSdf,
+                                      directed = FALSE)
+    tmppAdj <- as_adj(tmpGraph)
+  }
+  
 })
