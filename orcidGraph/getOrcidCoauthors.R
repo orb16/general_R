@@ -69,7 +69,7 @@ mycoAuthorsByNumber <- do.call("c", sapply(peoplebyDOI, "[[", "orcid-identifier.
 allcolleagues <- list()
 
 mycoAuthors_asorcids <- lapply(mycoAuthors, "orcid_id")
-mycoAuthorsAsNames <- lapply(mycoAuthors_asorcids, function(x) paste(x[[1]]$name$`given-names`$value,
+mycoAuthorsAsNames <- sapply(mycoAuthors_asorcids, function(x) paste(x[[1]]$name$`given-names`$value,
                                                                      x[[1]]$name$`family-name`$value))
 
 directCoAuthorTab <- data.frame(directcoAuthor = mycoAuthors,
@@ -102,10 +102,30 @@ cocoAuthorsAsTable <- bind_rows(lapply(cocoAuthors_asOrchids, function(x) data.f
   orcid.identifier.path = x$name$path)))
 
 puttingTogether <- left_join(coAuthTocoAuth %>% rename(orcid.identifier.path = `orcid-identifier.path`),
-                             cocoAuthorsAsTable)
+                             cocoAuthorsAsTable) %>%
+  left_join(., directCoAuthorTab %>% rename(coAuthorsORCID = directcoAuthor))
 
+coAuthorLinks <- puttingTogether %>%
+  filter(directcoAuthorName != name) %>%
+  group_by(directcoAuthorName, name) %>%
+  summarise(weight = n()) %>%
+  arrange(desc(weight))
 
+    tmpGraph <- graph_from_data_frame(coAuthorLinks,
+                                      directed = FALSE)
 
+    l <- layout.kamada.kawai(tmpGraph)
+
+    pdf("~/Dropbox/landcare_work/orcidGraph.pdf",
+        paper = "a4r")
+    plot(tmpGraph, vertex.label.cex = 0.2,
+         vertex.shape="none", vertex.size=0.1,
+         edge.width = sqrt(E(tmpGraph)$weight), layout=l)
+    dev.off()
+write.csv(coAuthorLinks,
+          file = "~/Dropbox/landcare_work/orcidTable.csv",
+          row.names = FALSE)
+save.image("~/Dropbox/landcare_work/orcidTable.Rdata")
 
 # look up
 
